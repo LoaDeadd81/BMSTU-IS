@@ -5,7 +5,7 @@
 
 int main() {
     const int rotor_num = 3;
-    const int size = 256;
+    const int size = 128;
 
     int arr[size] = {};
     srand(time(NULL));

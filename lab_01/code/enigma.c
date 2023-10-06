@@ -92,9 +92,7 @@ unsigned int backtrack(enigma_t *enigma, unsigned int symbol, unsigned int rotor
 
     for (int i = 0; i < enigma->rotor_size; ++i)
         if (enigma->rotors[rotor_index][i] == symbol)
-            return i < enigma->indexes[rotor_index] ?
-                   enigma->rotor_size - (enigma->indexes[rotor_index] - i)
-                                                    : i - enigma->indexes[rotor_index];
+            return i < enigma->indexes[rotor_index] ? enigma->rotor_size - (enigma->indexes[rotor_index] - i) : i - enigma->indexes[rotor_index];
 
     *status = 0;
     return 0;

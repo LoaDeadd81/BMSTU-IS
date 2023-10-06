@@ -1,0 +1,158 @@
+\chapter{Технологическая часть}
+
+В данном разделе будут рассмотрены средства реализации, а также представлены листинги реализаций алгоритма шифрования машины <<Энигма>>.
+
+\section{Средства реализации}
+В данной работе для реализации был выбран язык программирования $C$. Данный язык удоволетворяет поставленным критериям по средствам реализации.
+
+\section{Реализация алгоритма}
+
+В листингах \ref{lst:enigma1} представлена реализация алгоритма шифрования машины <<Энигма>>.
+
+\begin{center}
+    \captionsetup{justification=raggedright,singlelinecheck=off}
+    \begin{lstlisting}[label=lst:enigma1,caption=Реализация алгоритма шифрования машины <<Энигма>>]
+typedef struct enigma_t {
+	unsigned int rotor_size;
+	unsigned int rotor_num;
+	unsigned int *commutator;
+	unsigned int *reflector;
+	unsigned int **rotors;
+	unsigned int *indexes;
+} enigma_t;
+
+enigma_t *new_enigma(unsigned int rotor_num, unsigned int rotor_size) {
+	enigma_t *enigma = malloc(sizeof(enigma_t));
+	if (enigma == NULL) return NULL;
+	
+	
+	enigma->commutator = malloc(sizeof(unsigned int) * rotor_size);
+	if (enigma->commutator == NULL) {
+		free(enigma);
+		return NULL;
+	}
+	enigma->reflector = malloc(sizeof(unsigned int) * rotor_size);
+	if (enigma->reflector == NULL) {
+		free(enigma->commutator);
+		free(enigma);
+		return NULL;
+	}
+	
+	enigma->rotors = malloc(sizeof(unsigned int *) * rotor_num);
+	for (int i = 0; i < rotor_num; ++i) enigma->rotors[i] = malloc(sizeof(unsigned int) * rotor_size);
+	
+	enigma->indexes = calloc(rotor_num, sizeof(unsigned int));
+	
+	enigma->rotor_size = rotor_size;
+	enigma->rotor_num = rotor_num;
+	
+	return enigma;
+}
+
+void free_enigma(enigma_t *enigma) {
+	for (int i = 0; i < enigma->rotor_num; ++i) free(enigma->rotors[i]);
+	free(enigma->rotors);
+	free(enigma->reflector);
+	free(enigma->commutator);
+	free(enigma->indexes);
+	free(enigma);
+}
+
+void set_commutator(enigma_t *enigma, const unsigned int *commutator) {
+	for (int i = 0; i < enigma->rotor_size; ++i) enigma->commutator[i] = commutator[i];
+}
+
+void set_rotors(enigma_t *enigma, unsigned int **rotors) {
+	for (int i = 0; i < enigma->rotor_num; ++i)
+	for (int j = 0; j < enigma->rotor_size; ++j)
+	enigma->rotors[i][j] = rotors[i][j];
+	
+}
+
+void set_reflector(enigma_t *enigma, const unsigned int *reflector) {
+	for (int i = 0; i < enigma->rotor_size; ++i) enigma->reflector[i] = reflector[i];
+}
+
+unsigned int encrypt(enigma_t *enigma, unsigned int symbol, int *status) {
+	*status = 1;
+	if (enigma == NULL) {
+		*status = 0;
+		return 0;
+	}
+	if (symbol >= enigma->rotor_size) {
+		*status = 0;
+		return 0;
+	}
+	
+	symbol = enigma->commutator[symbol];
+	for (int i = 0; i < enigma->rotor_num; ++i)
+	symbol = enigma->rotors[i][(symbol + enigma->indexes[i]) % enigma->rotor_size];
+	
+	symbol = enigma->reflector[symbol];
+	
+	for (int i = enigma->rotor_num - 1; i >= 0; --i) {
+		symbol = backtrack(enigma, symbol, i, status);
+		if (*status == 0) return 0;
+	}
+	symbol = enigma->commutator[symbol];
+	
+	int shift = 1;
+	for (int i = 0; i < enigma->rotor_num && shift == 1; ++i) {
+		shift = 0;
+		if (enigma->indexes[i] >= enigma->rotor_size - 1) shift = 1;
+		enigma->indexes[i] = (enigma->indexes[i] + 1) % enigma->rotor_size;
+	}
+	
+	return symbol;
+}
+
+unsigned int backtrack(enigma_t *enigma, unsigned int symbol, unsigned int rotor_index, int *status) {
+	*status = 1;
+	
+	for (int i = 0; i < enigma->rotor_size; ++i)
+	if (enigma->rotors[rotor_index][i] == symbol)
+	return i < enigma->indexes[rotor_index] ? enigma->rotor_size - (enigma->indexes[rotor_index] - i) : i - enigma->indexes[rotor_index];
+	
+	*status = 0;
+	return 0;
+}
+
+\end{lstlisting}
+\end{center}
+\FloatBarrier
+
+\section{Тестирование}
+
+Для тестирование написанной программы можно воспользоваться тем, что для декодирования информации нужно прогнать зашифрованный текст через машину ещё раз с теми же настройками, что использовались для кодирования. Поэтому для тестирования входной файл кодируется и результат записывается во временный файл, этот файл кодируется ещё раз с теми же настройка и записывается в выходной файл. В результате входной и выходной файлы должны совпадать.
+
+\begin{table}[h]
+	\begin{center}
+		\begin{threeparttable}
+			\captionsetup{justification=raggedright,singlelinecheck=off}
+			\caption{\label{tbl:functional_} Функциональные тесты}
+			\begin{tabular}{|c|c|c|c|}
+				\hline
+				Входной файл & Ожидаемый результат & Результат \\ 
+				\hline
+				1\_in.txt (9 bytes) & 1\_out.txt (9 bytes) & 1\_out.txt (9 bytes)\\
+				<<encode me>> & <<encode me>> &<<encode me>>\\
+				\hline
+				2\_in.txt (1 bytes) & 2\_out.txt (1 bytes) & 2\_out.txt (1 bytes)\\
+				<<a>> & <<a>> &<<a>>\\
+				\hline
+				3\_in.txt (0 bytes) & 3\_out.txt (0 bytes) & 3\_out.txt (0 bytes)\\
+				<<>> & <<>> &<<>>\\
+				\hline
+				4\_in.tar.gz (150 bytes) & 4\_out.tar.gz (150 bytes) & 4\_out.tar.gz (150 bytes)\\
+				tst.txt (32 bytes)& tst.txt (32 bytes &tst.txt (32 bytes\\
+				<<encode me>> & <<encode me>> &<<encode me>>\\
+				\hline
+			\end{tabular}
+		\end{threeparttable}
+	\end{center}
+\end{table}
+\FloatBarrier
+
+\section*{Вывод}
+
+Были представлен листинг реализации алгоритма работы энигмы. Также в данном разделе была приведена информация о выбранных средствах для разработки алгоритмов.
