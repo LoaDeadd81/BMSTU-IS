@@ -55,33 +55,39 @@ int main(int argc, char **argv) {
 
         len = encode(res, key, buf, cnt);
 
-        fputc(cnt % 255, output);
-        while (cnt > 255) {
-            fputc(cnt / 255, output);
-            cnt /= 255;
+        while (cnt > 0) {
+//            printf("%d ", '0' + cnt % 10);
+            fputc('0' + cnt % 10, output);
+            cnt /= 10;
         }
         fputc('\0', output);
 
-        for (int i = 0; i < len; ++i)
+        for (int i = 0; i < len; ++i) {
+//            printf("%d ", res[i]);
             fputc(res[i], output);
-
+        }
+//        printf("\n");
     } else if (mode == DECODE_MODE) {
         size_t len = 0;
         int cnt = 0;
         int symbol = 0;
 
-        len = fgetc(input);
-        int tmp = 1;
+        len = 0;
         while ((symbol = fgetc(input)) != '\0') {
-            len += symbol * pow(255.0, tmp++);
+//            printf("%d ", symbol);
+            len *= 10;
+            len += symbol - '0';
         }
 
-        while (cnt < BUFF_SIZE && (symbol = fgetc(input)) != EOF)
+        while (cnt < BUFF_SIZE && (symbol = fgetc(input)) != EOF) {
             buf[cnt++] = symbol;
+//            printf("%d ", buf[cnt - 1]);
+        }
         if (symbol != EOF) {
             perror("file too big");
             return -1;
         }
+//        printf("\n");
 
         decode(res, key, buf, cnt);
 
