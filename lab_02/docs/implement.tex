@@ -1,0 +1,112 @@
+\chapter{Технологическая часть}
+
+В данном разделе будут рассмотрены средства реализации, а также представлены листинги реализаций алгоритма шифрования DES.
+
+\section{Средства реализации}
+В данной работе для реализации был выбран язык программирования $C$. Данный язык удоволетворяет поставленным критериям по средствам реализации.
+
+\section{Реализация алгоритма}
+
+В листингах \ref{lst:encode} и \ref{lst:decode} представлена реализация алгоритма шифрования DES с использованием режима PCBC.
+
+\begin{center}
+    \captionsetup{justification=raggedright,singlelinecheck=off}
+    \begin{lstlisting}[label=lst:encode,caption=Шифрование DES]
+size_t encode(uint8_t *to, uint8_t *keys8b, uint8_t *from, size_t length) {
+	length = length % 8 == 0 ? length : length + (8 - (length % 8));
+	
+	uint64_t keys48b[16] = {0};
+	uint32_t N1, N2;
+	
+	key_expansion(join_8bits_to_64bits(keys8b),keys48b);
+	
+	uint64_t lastCypher = 1, lastOpen = 1;
+	for (size_t i = 0; i < length; i += 8) {
+		uint64_t open = join_8bits_to_64bits(from + i);
+		
+		uint64_t tmp = lastOpen;
+		lastOpen = open;
+		
+		open ^= lastCypher;
+		open ^= tmp;
+		
+		split_64bits_to_32bits(initial_permutation(open), &N1, &N2);
+		feistel_encode(&N1, &N2, keys48b);
+		
+		lastCypher = final_permutation(join_32bits_to_64bits(N1, N2));
+		split_64bits_to_8bits(lastCypher, (to + i));
+	}
+	
+	return length;
+}
+\end{lstlisting}
+\end{center}
+
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:decode,caption=Дешифрование DES]
+size_t decode(uint8_t *to, uint8_t *keys8b, uint8_t *from, size_t length) {
+	length = length % 8 == 0 ? length : length + (8 - (length % 8));
+	
+	uint64_t keys48b[16] = {0};
+	uint32_t N1, N2;
+	
+	key_expansion(join_8bits_to_64bits(keys8b),keys48b);
+	
+	uint64_t lastCypher = 1, lastOpen = 1;
+	for (size_t i = 0; i < length; i += 8) {
+		uint64_t cypher = join_8bits_to_64bits(from + i);
+		
+		split_64bits_to_32bits(initial_permutation(cypher),&N1, &N2);
+		feistel_decode(&N1, &N2, keys48b);
+		
+		uint64_t open = final_permutation(join_32bits_to_64bits(N1, N2));
+		open ^= lastOpen;
+		open ^= lastCypher;
+		
+		lastOpen = open;
+		lastCypher = cypher;
+		
+		split_64bits_to_8bits(lastOpen,(to + i));
+	}
+	
+	return length;
+}
+\end{lstlisting}
+\end{center}
+\FloatBarrier
+
+\section{Тестирование}
+
+Для тестирование написанной программы файл шифровался и дешифровался и сравнивалось их содержимое.
+
+\begin{table}[h]
+	\begin{center}
+		\begin{threeparttable}
+			\captionsetup{justification=raggedright,singlelinecheck=off}
+			\caption{\label{tbl:functional_} Функциональные тесты}
+			\begin{tabular}{|c|c|c|c|}
+				\hline
+				Входной файл & Ожидаемый результат & Результат \\ 
+				\hline
+				1\_in.txt (9 bytes) & 1\_out.txt (9 bytes) & 1\_out.txt (9 bytes)\\
+				<<encode me>> & <<encode me>> &<<encode me>>\\
+				\hline
+				2\_in.txt (1 bytes) & 2\_out.txt (1 bytes) & 2\_out.txt (1 bytes)\\
+				<<a>> & <<a>> &<<a>>\\
+				\hline
+				3\_in.txt (0 bytes) & 3\_out.txt (0 bytes) & 3\_out.txt (0 bytes)\\
+				<<>> & <<>> &<<>>\\
+				\hline
+				4\_in.tar.gz (21 Kb) & 4\_out.tar.gz (21 Kb) & 4\_out.tar.gz (21 Kb)\\
+				test.png & test.png & test.png\\
+				\hline
+			\end{tabular}
+		\end{threeparttable}
+	\end{center}
+\end{table}
+\FloatBarrier
+
+\section*{Вывод}
+
+Были представлен листинг реализации алгоритма работы энигмы. Также в данном разделе была приведена информация о выбранных средствах для разработки алгоритмов.
