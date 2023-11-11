@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <limits.h>
 
-#define BUFF_SIZE INT_MAX
+#define BUFF_SIZE 8388608
 
 size_t encode(uint8_t *to, uint8_t *keys8b, uint8_t *from, size_t length);
 
