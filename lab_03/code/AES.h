@@ -17,4 +17,6 @@ void encode_block(uint8_t *dst, uint8_t *src, uint32_t *keys);
 
 void decode_block(uint8_t *dst, uint8_t *src, uint32_t *keys);
 
+void xor(uint8_t *b1, uint8_t *b2);
+
 #endif //LAB_03_AES_H

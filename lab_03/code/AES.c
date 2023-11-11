@@ -134,6 +134,13 @@ void decode_block(uint8_t *dst, uint8_t *src, uint32_t *keys) {
     copy_t_block(dst, block);
 }
 
+void xor(uint8_t *b1, uint8_t *b2) {
+    uint64_t *tp1 = (uint64_t *) b1, *tp2 = (uint64_t *) b2;
+    for (int i = 0; i < 2; ++i) {
+        tp1[i] ^= tp2[i];
+    }
+}
+
 
 void key_expansion(uint32_t *keys, uint8_t *key) {
     uint8_t nk = KEY_SIZE / NB;

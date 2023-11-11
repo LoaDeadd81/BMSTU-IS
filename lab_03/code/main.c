@@ -58,58 +58,77 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    uint8_t *buf = calloc(BLOCK_SIZE, sizeof(uint8_t));
-    uint8_t *res = calloc(BLOCK_SIZE, sizeof(uint8_t));
-    uint8_t *res_lst = calloc(BLOCK_SIZE, sizeof(uint8_t));
-    if (buf == NULL || res == NULL || res_lst == NULL) {
+    uint8_t *buf1 = calloc(BLOCK_SIZE, sizeof(uint8_t));
+    uint8_t *buf2 = calloc(BLOCK_SIZE, sizeof(uint8_t));
+    uint8_t *buf3 = calloc(BLOCK_SIZE, sizeof(uint8_t));
+    if (buf1 == NULL || buf2 == NULL || buf3 == NULL) {
         close(input);
         close(output);
         free(keys);
-        free(buf);
-        free(res);
-        free(res_lst);
+        free(buf1);
+        free(buf2);
+        free(buf3);
         return -1;
     }
 
 
     if (mode == ENCODE_MODE) {
-        int len = 0, flag = 0;
+        int len = 0, flag = 0, cnt = 0;
         sz_t total = 0;
-        while ((len = read(input, buf, BLOCK_SIZE)) == BLOCK_SIZE) {
-//            print_bytes(buf, BLOCK_SIZE);
+        uint8_t *buf = buf1, *res = buf2, *inp = buf3;
+
+        while ((len = read(input, inp, BLOCK_SIZE)) == BLOCK_SIZE) {
+            if (cnt % 2 == 0) {
+                buf = buf1;
+                res = buf2;
+            } else {
+                buf = buf2;
+                res = buf1;
+            }
+            cnt++;
+//            print_bytes(inp, BLOCK_SIZE);
             encode_block(res, buf, keys);
+            xor(res, inp);
 //            print_bytes(res, BLOCK_SIZE);
+
             if (write(output, res, BLOCK_SIZE) < 0) {
                 close(input);
                 close(output);
                 free(keys);
-                free(buf);
-                free(res);
+                free(buf1);
+                free(buf2);
+                free(buf3);
                 printf("%s\n", "write ciphertext failed");
                 return -1;
             }
             total += len;
         }
+
         if (len < 0) {
             close(input);
             close(output);
             free(keys);
-            free(buf);
-            free(res);
+            free(buf1);
+            free(buf2);
+            free(buf3);
             printf("%s\n", "read plain text failed");
             return -1;
         }
+
         if (len != 0) {
-            memset(buf + len, 0, BLOCK_SIZE - len);
+            memset(inp + len, 0, BLOCK_SIZE - len);
+//            print_bytes(inp, BLOCK_SIZE);
+            encode_block(buf, res, keys);
+            xor(buf, inp);
 //            print_bytes(buf, BLOCK_SIZE);
-            encode_block(res, buf, keys);
-//            print_bytes(res, BLOCK_SIZE);
-            if (write(output, res, BLOCK_SIZE) < 0) {
+
+            if (write(output, buf, BLOCK_SIZE) < 0) {
                 close(input);
                 close(output);
                 free(keys);
-                free(buf);
-                free(res);
+                free(buf1);
+                free(buf2);
+                free(buf3);
                 printf("%s\n", "write ciphertext failed");
                 return -1;
             }
@@ -124,40 +143,56 @@ int main(int argc, char **argv) {
                 close(input);
                 close(output);
                 free(keys);
-                free(buf);
-                free(res);
+                free(buf1);
+                free(buf2);
+                free(buf3);
                 printf("%s\n", "write total size failed");
                 return -1;
             }
             total /= 10;
         }
     } else if (mode == DECODE_MODE) {
-        int len = 0;
-        while ((len = read(input, buf, BLOCK_SIZE)) == BLOCK_SIZE) {
-            if(strcmp(buf, END) == 0) break;
-//            print_bytes(buf, BLOCK_SIZE);
-            decode_block(res, buf, keys);
+        int len = 0, cnt = 0;
+        uint8_t *buf = buf2, *res = buf3, *inp = buf1;
+
+        while ((len = read(input, inp, BLOCK_SIZE)) == BLOCK_SIZE) {
+            if (strcmp(inp, END) == 0) break;
+
+//            print_bytes(inp, BLOCK_SIZE);
+            encode_block(res, buf, keys);
+            xor(res, inp);
+            if (cnt % 2 == 0) {
+                buf = buf1;
+                inp = buf2;
+            } else {
+                buf = buf2;
+                inp = buf1;
+            }
+            cnt++;
 //            print_bytes(res, BLOCK_SIZE);
+
             if (write(output, res, BLOCK_SIZE) < 0) {
                 close(input);
                 close(output);
                 free(keys);
-                free(buf);
-                free(res);
+                free(buf1);
+                free(buf2);
+                free(buf3);
                 printf("%s\n", "write plain text failed");
                 return -1;
             }
         }
+
         if (len < 0) {
             close(input);
             close(output);
             free(keys);
-            free(buf);
-            free(res);
+            free(buf1);
+            free(buf2);
+            free(buf3);
             printf("%s\n", "read ciphertext failed");
             return -1;
         }
-
 
         sz_t total = 0;
         char symbol = 0;
@@ -171,7 +206,8 @@ int main(int argc, char **argv) {
     close(input);
     close(output);
     free(keys);
-    free(buf);
-    free(res);
+    free(buf1);
+    free(buf2);
+    free(buf3);
     return 0;
 }
