@@ -1,0 +1,94 @@
+\chapter{Технологическая часть}
+
+В данном разделе будут рассмотрены средства реализации, а также представлены листинги реализаций алгоритма шифрования AES.
+
+\section{Средства реализации}
+В данной работе для реализации был выбран язык программирования $C$. Данный язык удоволетворяет поставленным критериям по средствам реализации.
+
+\section{Реализация алгоритма}
+
+В листингах \ref{lst:encode_block} и \ref{lst:decode_block} представлена реализация алгоритма шифрования AES с использованием режима CFB.
+
+\begin{center}
+    \captionsetup{justification=raggedright,singlelinecheck=off}
+    \begin{lstlisting}[label=lst:encode_block,caption=Шифрование AES]
+void encode_block(uint8_t *dst, uint8_t *src, uint32_t *keys) {
+	uint8_t block[16];
+	
+	copy_t_block(block, src);
+	
+	add_round_key(block, keys);
+	for (uint8_t round = 1; round < ROUND_NUM; ++round) {
+		sub_bytes(block);
+		shift_rows(block);
+		mix_columns(block);
+		add_round_key(block, keys + (NB * round));
+	}
+	sub_bytes(block);
+	shift_rows(block);
+	add_round_key(block, keys + (NB * ROUND_NUM));
+	
+	copy_t_block(dst, block);
+}
+\end{lstlisting}
+\end{center}
+
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:decode_block,caption=Дешифрование AES]
+void decode_block(uint8_t *dst, uint8_t *src, uint32_t *keys) {
+	uint8_t block[16];
+	
+	copy_t_block(block, src);
+	
+	add_round_key(block, keys + (NB * ROUND_NUM));
+	for (int8_t round = ROUND_NUM - 1; round > 0; --round) {
+		inv_shift_rows(block);
+		inv_sub_bytes(block);
+		add_round_key(block, keys + (NB * round));
+		inv_mix_columns(block);
+	}
+	inv_shift_rows(block);
+	inv_sub_bytes(block);
+	add_round_key(block, keys);
+	
+	copy_t_block(dst, block);
+}
+\end{lstlisting}
+\end{center}
+\FloatBarrier
+
+\section{Тестирование}
+
+Для тестирование написанной программы файл шифровался и дешифровался и сравнивалось их содержимое.
+
+\begin{table}[h]
+	\begin{center}
+		\begin{threeparttable}
+			\captionsetup{justification=raggedright,singlelinecheck=off}
+			\caption{\label{tbl:functional_} Функциональные тесты}
+			\begin{tabular}{|c|c|c|c|}
+				\hline
+				Входной файл & Ожидаемый результат & Результат \\ 
+				\hline
+				1\_in.txt (9 bytes) & 1\_out.txt (9 bytes) & 1\_out.txt (9 bytes)\\
+				<<encode\_block me>> & <<encode\_block me>> &<<encode\_block me>>\\
+				\hline
+				2\_in.txt (1 bytes) & 2\_out.txt (1 bytes) & 2\_out.txt (1 bytes)\\
+				<<a>> & <<a>> &<<a>>\\
+				\hline
+				3\_in.txt (0 bytes) & 3\_out.txt (0 bytes) & 3\_out.txt (0 bytes)\\
+				<<>> & <<>> &<<>>\\
+				\hline
+				4\_in.tar.gz (21 Kb) & 4\_out.tar.gz (21 Kb) & 4\_out.tar.gz (21 Kb)\\
+				test.png & test.png & test.png\\
+				\hline
+			\end{tabular}
+		\end{threeparttable}
+	\end{center}
+\end{table}
+\FloatBarrier
+
+\section*{Вывод}
+
+Были представлен листинг реализации алгоритма работы энигмы. Также в данном разделе была приведена информация о выбранных средствах для разработки алгоритмов.
