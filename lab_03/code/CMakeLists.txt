@@ -8,4 +8,3 @@ add_executable(lab_03
         AES.h
 )
 target_link_libraries(lab_03 m)
-add_executable(../tmp.c)

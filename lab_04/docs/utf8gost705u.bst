@@ -1518,4 +1518,3 @@ EXECUTE {end.bib}
 
 %%
 %% End of file `utf8gost705u.bst'.
-

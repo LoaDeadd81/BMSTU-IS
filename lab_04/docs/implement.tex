@@ -1,0 +1,121 @@
+\chapter{Технологическая часть}
+
+В данном разделе будут рассмотрены средства реализации, представлены листинги реализаций алгоритма шифрования RSA и результаты тестирования.
+
+\section{Средства реализации}
+
+В данной работе для реализации был выбран язык программирования $C$. Данный язык удовлетворяет поставленным критериям по средствам реализации.
+
+\section{Реализация алгоритма}
+
+В листинге \ref{lst:RSA} представлена реализация алгоритма шифрования RSA.
+
+\begin{center}
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+	\begin{lstlisting}[label=lst:RSA,caption=RSA]
+lli gcde(lli a, lli b, lli *x, lli *y) {
+	if (a == 0) {
+		*x = 0;
+		*y = 1;
+		return b;
+	}
+	lli x1, y1;
+	lli d = gcde(b % a, a, &x1, &y1);
+	*x = y1 - (b / a) * x1;
+	*y = x1;
+	return d;
+}
+
+lli mod_exp(lli num, lli exp, lli mod) {
+	lli product = 1;
+	
+	while (exp > 0) {
+		if (exp & 0x01) product = (product * num) % mod;
+		num = (num * num) % mod;
+		exp >>= 1;
+	}
+	
+	return product;
+}
+
+void rsa_key_gen(rsa_key_t *public_key, rsa_key_t *private_key) {
+	lli N = 0, phi = 0;
+	lli e = E;
+	
+	N = P * Q;
+	phi = (P - 1) * (Q - 1);
+	
+	lli x, y;
+	gcde(e, phi, &x, &y);
+	while (x < 0) x = x + phi;
+	
+	public_key->mod = N;
+	public_key->exp = e;
+	
+	private_key->mod = N;
+	private_key->exp = x;
+}
+
+lli rsa(const lli data, const struct rsa_key_t key) {
+	return mod_exp(data, key.exp, key.mod);
+}
+	\end{lstlisting}
+\end{center}
+
+\section{Тестирование}
+
+Для тестирование написанной программы сначала генерировались ключи. Потом подписывался файл и проверялась его подпись.
+
+\begin{table}[h]
+	\begin{center}
+		\begin{threeparttable}
+			\captionsetup{justification=raggedright,singlelinecheck=off}
+			\caption{\label{tbl:functional_RSA} Функциональные тесты ЭЦП}
+			\begin{tabular}{|c|c|c|c|}
+				\hline
+				Входной файл & Ожидаемый результат & Результат \\ 
+				\hline
+				Текстовый файл & Успешная проверка &Успешная проверка\\
+				\hline
+				1 байтовый файл & Успешная проверка &Успешная проверка\\
+				\hline
+				Пустой файл & Успешная проверка &Успешная проверка\\
+				\hline
+				Архив & Успешная проверка &Успешная проверка\\
+				\hline
+				PNG изображение & Успешная проверка &Успешная проверка\\
+				\hline
+				2 разных файла & Проваленная проверка &Проваленная проверка\\
+				\hline
+			\end{tabular}
+		\end{threeparttable}
+	\end{center}
+\end{table}
+\FloatBarrier
+
+Для тестирование MD5 был введён дополнительный режим работы программы, позволяющий получить хеш файла. Результат работы программы сравнивался с результатом md5sum с помощью команды cmp.
+
+\begin{table}[h]
+	\begin{center}
+		\begin{threeparttable}
+			\captionsetup{justification=raggedright,singlelinecheck=off}
+			\caption{\label{tbl:functional_MD5} Функциональные тесты MD5}
+			\begin{tabular}{|c|c|c|c|}
+				\hline
+				Входной файл & Ожидаемый результат & Результат \\ 
+				\hline
+				Текстовый файл & Пустой вывод &Пустой вывод\\
+				\hline
+				1 байтовый файл & Пустой вывод &Пустой вывод\\
+				\hline
+				Пустой файл & Пустой вывод &Пустой вывод\\
+				\hline
+				Архив & Пустой вывод &Пустой вывод\\
+				\hline
+				PNG изображение & Пустой вывод &Пустой вывод\\
+				\hline
+			\end{tabular}
+		\end{threeparttable}
+	\end{center}
+\end{table}
+\FloatBarrier

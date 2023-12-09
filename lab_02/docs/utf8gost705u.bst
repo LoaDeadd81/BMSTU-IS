@@ -505,10 +505,10 @@ FUNCTION {format.names}
     { namesleft #0 > }
     {  s nameptr
        curlanguage "ukrainian" = curlanguage "russian" = or
-       { "{vv~}{ll}{~jj}{~ff}" format.name$ 't := }
+       { "{vv~}{lli}{~jj}{~ff}" format.name$ 't := }
        { curlanguage "english" =
-         { "{vv~}{ll}{~jj}{~f.}" format.name$ 't := }
-         { "language is not defined: " language  "{vv~}{ll}{~jj}{~ff}" * * warning$ "{vv~}{ll}{~jj}{~ff}" }
+         { "{vv~}{lli}{~jj}{~f.}" format.name$ 't := }
+         { "language is not defined: " language  "{vv~}{lli}{~jj}{~ff}" * * warning$ "{vv~}{lli}{~jj}{~ff}" }
         if$}
       if$
       nameptr #1 >
@@ -549,10 +549,10 @@ FUNCTION {format.names.rev}
     { namesleft #0 > }
     { s nameptr
       curlanguage "ukrainian" = curlanguage "russian" = or
-       { "{ff}{~vv}{~ll}{, jj}"  format.name$ 't := }
+       { "{ff}{~vv}{~lli}{, jj}"  format.name$ 't := }
        { curlanguage "english" =
-         { "{f.}{~vv}{~ll}{, jj}" format.name$ 't := }
-         { "language is not defined: " language  "{ff}{~vv}{~ll}{, jj}" * * warning$ "{ff}{~vv}{~ll}{, jj}" }
+         { "{f.}{~vv}{~lli}{, jj}" format.name$ 't := }
+         { "language is not defined: " language  "{ff}{~vv}{~lli}{, jj}" * * warning$ "{ff}{~vv}{~lli}{, jj}" }
         if$}
       if$
 
