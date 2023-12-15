@@ -1,0 +1,177 @@
+\chapter{Технологическая часть}
+
+В данном разделе будут рассмотрены средства реализации, представлены листинги реализаций алгоритма шифрования LZW и результаты тестирования.
+
+\section{Средства реализации}
+
+В данной работе для реализации был выбран язык программирования $C$. Данный язык удовлетворяет поставленным критериям по средствам реализации.
+
+\section{Реализация алгоритма}
+
+В листинге \ref{lst:RSA} представлена реализация алгоритма шифрования RSA.
+
+\begin{center}
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+	\begin{lstlisting}[label=lst:RSA,caption=RSA]
+int encode(int in_fd, int out_fd) {
+	auto dict = get_dict();
+	uint16_t code = NEW_CODE;
+	
+	int rc = 0;
+	char ch;
+	if ((rc = read(in_fd, &ch, sizeof(char))) < 0) {
+		perror("read char error");
+		return -1;
+	}
+	if(rc == 0) return 0;
+	string p(1, ch);
+	
+	while ((rc = read(in_fd, &ch, sizeof(char))) > 0) {
+		if (dict.contains(p + ch)) p += ch;
+		else {
+			if (write(out_fd, &dict[p], sizeof(uint16_t)) < 0) {
+				perror("write code error");
+				return -1;
+			}
+			dict[p + ch] = code++;
+			p = ch;
+		}
+		if(code == INT16_MAX){
+			if (!p.empty()) {
+				if (write(out_fd, &dict[p], sizeof(uint16_t)) < 0) {
+					perror("write code error");
+					return -1;
+				}
+			}
+			
+			dict = get_dict();
+			code = NEW_CODE;
+			
+			if ((rc = read(in_fd, &ch, sizeof(char))) < 0) {
+				perror("read char error");
+				return -1;
+			}
+			if(rc == 0) return 0;
+			p = ch;
+			
+			uint16_t tmp = CLR_CODE;
+			if (write(out_fd, &tmp, sizeof(uint16_t)) < 0) {
+				perror("write clr code error");
+				return -1;
+			}
+		}
+	}
+	if (rc < 0) {
+		perror("read char error");
+		return -1;
+	}
+	if (!p.empty()) {
+		if (write(out_fd, &dict[p], sizeof(uint16_t)) < 0) {
+			perror("write code error");
+			return -1;
+		}
+	}
+	
+	return 0;
+}
+
+int decode(int in_fd, int out_fd) {
+	auto dict = get_inv_dict();
+	uint16_t code = NEW_CODE;
+	
+	string s, entry;
+	uint16_t k;
+	int rc = 0;
+	if ((rc = read(in_fd, &k, sizeof(uint16_t))) < 0){
+		perror("read code error");
+		return -1;
+	}
+	if(rc == 0) return 0;
+	s = dict[k];
+	if(write_str(out_fd, s) < 0){
+		perror("write str error");
+		return -1;
+	}
+	
+	while ((rc = read(in_fd, &k, sizeof(uint16_t))) > 0) {
+		if(k == CLR_CODE){
+			dict = get_inv_dict();
+			code = NEW_CODE;
+			
+			if ((rc = read(in_fd, &k, sizeof(uint16_t))) < 0){
+				perror("read code error");
+				return -1;
+			}
+			if(rc == 0) return 0;
+			s = dict[k];
+			if(write_str(out_fd, s) < 0){
+				perror("write str error");
+				return -1;
+			}
+			continue;
+		}
+		
+		if (dict.contains(k))
+		entry = dict[k];
+		else if (k == code)
+		entry = s + s[0];
+		else
+		throw exception();
+		
+		if(write_str(out_fd, entry) < 0){
+			perror("write str error");
+			return -1;
+		}
+		dict[code++] = s + entry[0];
+		s = entry;
+	}
+	if (rc < 0) {
+		perror("read code error");
+		return -1;
+	}
+	
+	return 0;
+}
+
+	\end{lstlisting}
+\end{center}
+
+\section{Тестирование}
+
+Для тестирование написанной программы сжимались и разжимались файлы и проверялся коэффициент сжатия.
+
+\begin{table}[h]
+	\begin{center}
+		\begin{threeparttable}
+			\captionsetup{justification=raggedright,singlelinecheck=off}
+			\caption{\label{tbl:functional_RSA} Функциональные тесты ЭЦП}
+			\begin{tabular}{|c|c|c|c|}
+				\hline
+				Входной файл & Ожидаемый результат & Результат \\ 
+				\hline
+				Текстовый файл & Файлы совпали & Файлы совпали\\
+				 & КС < 1 & КС = 0.5 \\
+				\hline
+				1 байтовый файл & Файлы совпали & Файлы совпали\\
+				& КС < 1 & КС = 0.5 \\
+				\hline
+				Пустой файл & Файлы совпали & Файлы совпали\\
+				& КС = -//- & КС = -//- \\
+				\hline
+				Архив & Файлы совпали & Файлы совпали\\
+				& КС < 1 & КС = 0.56 \\
+				\hline
+				PNG изображение & Файлы совпали & Файлы совпали\\
+				& КС < 1 & КС = 0.69 \\
+				\hline
+				Текст из множества & Файлы совпали & Файлы совпали\\
+				символов <<a>> & КС > 1 & КС = 11 \\
+				\hline
+				Однотонная картинка & Файлы совпали & Файлы совпали\\
+				& КС > 1 & КС = 194 \\
+				\hline
+			\end{tabular}
+		\end{threeparttable}
+	\end{center}
+\end{table}
+\FloatBarrier

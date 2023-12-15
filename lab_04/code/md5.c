@@ -148,21 +148,3 @@ void md5_finish(hash_state_t *state){
         state->digest[(i * 4) + 3] = (uint8_t)((state->buffer[i] & 0xFF000000) >> 24);
     }
 }
-
-void md5File(FILE *file, uint8_t *result){
-    char *input_buffer = malloc(1024);
-    size_t input_size = 0;
-
-    hash_state_t state;
-    md5_init(&state);
-
-    while((input_size = fread(input_buffer, 1, 1024, file)) > 0){
-        md5_update(&state, (uint8_t *)input_buffer, input_size);
-    }
-
-    md5_finish(&state);
-
-    free(input_buffer);
-
-    memcpy(result, state.digest, 16);
-}
